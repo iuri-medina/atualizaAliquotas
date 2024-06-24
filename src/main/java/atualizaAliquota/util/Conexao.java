@@ -9,7 +9,7 @@ public class Conexao {
 	
 	private Properties properties;
 	private static String db_host;
-	private static String db_port = "8745";
+	private static String db_port = "0000";
 	private static String db_name;
 	private static String db_password;
 	private static String db_username;
