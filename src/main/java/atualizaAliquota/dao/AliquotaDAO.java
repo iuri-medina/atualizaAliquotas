@@ -10,6 +10,7 @@ import java.util.List;
 
 import atualizaAliquota.model.Aliquota;
 import atualizaAliquota.util.Conexao;
+import atualizaAliquota.util.Log;
 
 public class AliquotaDAO {
 	private static final String SQL_BUSCAR_ALIQUOTAS = "SELECT id, (CASE\r\n"
@@ -33,7 +34,8 @@ public class AliquotaDAO {
 			+ "        TO_CHAR(percentualicmsdesonerado, 'FM999')\r\n"
 			+ "    ELSE\r\n"
 			+ "        TO_CHAR(percentualicmsdesonerado, 'FM999.99')\r\n"
-			+ "END) as percentualicmsdesonerado FROM aliquota WHERE porcentagem > 0;";
+			+ "END) as percentualicmsdesonerado,"
+			+ "     situacaotributaria, id_aliquotapdv as idaliquotapdv FROM aliquota;";
 	
 	public List<Aliquota> getAliquotaParaCorrecao() {
 		//executa a query que coleta os dados do bd
@@ -43,9 +45,7 @@ public class AliquotaDAO {
 		
 		   try (Connection conexao = Conexao.conectar();
 		        PreparedStatement preparedStatement = conexao.prepareStatement(SQL_BUSCAR_ALIQUOTAS)) {
-			   
-		
-			ResultSet rsAliquota = conexao.createStatement()
+			   	ResultSet rsAliquota = conexao.createStatement()
 					.executeQuery(SQL_BUSCAR_ALIQUOTAS);
 			
 			ArrayList<Aliquota> aliquotas = new ArrayList<>();
@@ -59,6 +59,8 @@ public class AliquotaDAO {
 				aliquota.setReduzido(rsAliquota.getDouble("reduzido"));
 				aliquota.setPorcentagemFcp(rsAliquota.getDouble("porcentagemfcp"));
 				aliquota.setPercentualIcmsDesonerado(rsAliquota.getDouble("percentualicmsdesonerado"));
+				aliquota.setSituacaoTributaria(rsAliquota.getInt("situacaotributaria"));
+				aliquota.setIdAliquotaPdv(rsAliquota.getObject("idaliquotapdv", Integer.class));
 				
 
 				aliquotas.add(aliquota);
@@ -67,14 +69,16 @@ public class AliquotaDAO {
 			return aliquotas;			
 			
 		} catch (SQLException ex) {
-			ex.printStackTrace();
-			throw new RuntimeException("Erro ao recuperar os produtos. Erro: " + ex.getMessage());
+			Log.info("Erro ao recuperar as aliquotas. Erro: " + ex.getMessage());
+			throw new RuntimeException("Erro ao recuperar as aliquotas. Erro: " + ex.getMessage());
+			
 		}
 
 	}
 	
 	public List<Aliquota> corrigirDescricaoFinal(List<Aliquota> aliquotas) {
 		aliquotas.forEach(aliquota -> aliquota.corrigeDescricao());
+		
 		return aliquotas;
 	}
 	
@@ -83,15 +87,21 @@ public class AliquotaDAO {
 		try (Connection conexao = Conexao.conectar();
 		     Statement statement = conexao.createStatement()) {
 
-		for(Aliquota aliquota : aliquotas) {
-			System.out.println("UPDATE aliquota SET descricao = " + "'" + aliquota.getDescricaoFinal() + "'" + " WHERE id = " + aliquota.getIdAliquota());
-			statement.executeUpdate("UPDATE aliquota SET descricao = " + "'" + aliquota.getDescricaoFinal() + "'" + " WHERE id = " + aliquota.getIdAliquota());
-			System.out.println("Aliquota de id = " + aliquota.getIdAliquota() + " alterada para: " + aliquota.getDescricaoFinal());
+			for(Aliquota aliquota : aliquotas) {
+				if(aliquota.isNaoAlteraAliquota()) {
+					Log.info("Aliquota de id = " + aliquota.getIdAliquota() + " NAO alterada.");
+
+				}
+				else {
+					statement.executeUpdate("UPDATE aliquota SET descricao = " + "'" + aliquota.getDescricaoFinal() + "'" + " WHERE id = " + aliquota.getIdAliquota());
+					Log.info("Aliquota de id = " + aliquota.getIdAliquota() + " alterada para: " + aliquota.getDescricaoFinal());
+				}
 			}
+			Log.info("Aliquotas alteradas com sucesso.");
 		} 	
 		catch (SQLException e) {
 		e.printStackTrace();
-		
+		Log.info(e.getMessage());
 		}
 
 	}

@@ -9,7 +9,7 @@ public class Conexao {
 	
 	private Properties properties;
 	private static String db_host;
-	private static String db_port = "8745";
+	private static String db_port;
 	private static String db_name;
 	private static String db_password;
 	private static String db_username;
@@ -21,13 +21,14 @@ public class Conexao {
 		
 		try {
 			FileInputStream file = new FileInputStream(
-					"c:/vr/exec/conexao.properties");
+					"../vr.properties");
 			properties.load(file);
 			
-			db_host = properties.getProperty("prop.server.host");
-			db_name = properties.getProperty("prop.server.dbname"); 
-			db_password = properties.getProperty("prop.server.password");
-			db_username = properties.getProperty("prop.server.username");
+			db_host = properties.getProperty("database.ip");
+			db_name = properties.getProperty("database.nome"); 
+			db_password = properties.getProperty("database.senha");
+			db_username = properties.getProperty("database.usuario");
+			db_port = properties.getProperty("database.porta");
 			
 		}
 		catch (IOException e){
